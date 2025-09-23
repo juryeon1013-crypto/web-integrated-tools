@@ -189,8 +189,8 @@ class NaverpayConverter:
         result = re.sub(r'(<div class="DeliveryContent_area-address__XsMLS"><span class="blind">주소</span>)[^<]+', f'\g<1>{기타항목["주소"]}', result)
         
         # 금액 정보 치환
-        result = re.sub(r'(<dd class="Summary_area-value__BcN0d">총 )[\d,]+', f'\g<1>{int(기타항목["주문금액(총결제금액, 숫자만)"]):,}', result)
-        result = re.sub(r'(<div class="SubSummary_item-detail__QFXCA">\s*<dt[^>]*>\s*<span class="SubSummary_label__9VC8U">상품금액</span>.*?</dt>\s*<dd class="SubSummary_area-value__2c7V6">)[^<]+', f'\g<1>{int(기타항목["상품금액(숫자만)"]):,}원', result, flags=re.DOTALL)
+        result = re.sub(r'(<dd class="Summary_area-value__BcN0d">총 )[\d,]+', r'\g<1>' + f'{int(기타항목["주문금액(총결제금액, 숫자만)"]):,}', result)
+        result = re.sub(r'(<div class="SubSummary_item-detail__QFXCA">\s*<dt[^>]*>\s*<span class="SubSummary_label__9VC8U">상품금액</span>.*?</dt>\s*<dd class="SubSummary_area-value__2c7V6">)[^<]+', r'\g<1>' + f'{int(기타항목["상품금액(숫자만)"]):,}원', result, flags=re.DOTALL)
         
         # 쿠폰할인 처리
         if 기타항목['쿠폰할인(숫자만, 0입력시 div삭제)'] == '0':
@@ -201,11 +201,11 @@ class NaverpayConverter:
                     div.decompose()
             result = str(soup3)
         else:
-            result = re.sub(r'(<span class="SubSummary_label__9VC8U">쿠폰할인</span>[\s\S]*?<dd class="SubSummary_area-value__2c7V6">)-[\d,]+원', f'\g<1>-{int(기타항목["쿠폰할인(숫자만, 0입력시 div삭제)"]):,}원', result)
+            result = re.sub(r'(<span class="SubSummary_label__9VC8U">쿠폰할인</span>[\s\S]*?<dd class="SubSummary_area-value__2c7V6">)-[\d,]+원', r'\g<1>-' + f'{int(기타항목["쿠폰할인(숫자만, 0입력시 div삭제)"]):,}원', result)
         
         # 배송비, 카드결제금액, 네이버포인트 치환
-        result = re.sub(r'(<span class="SubSummary_label__9VC8U">배송비</span></dt><dd class="SubSummary_area-value__2c7V6">)[\d,]+', f'\g<1>{int(기타항목["결제배송비(숫자만)"]):,}', result)
-        result = re.sub(r'(<dd class="Summary_area-value__BcN0d">)[\d,]+원', f'\g<1>{int(기타항목["카드결제금액(숫자만)"]):,}원', result)
+        result = re.sub(r'(<span class="SubSummary_label__9VC8U">배송비</span></dt><dd class="SubSummary_area-value__2c7V6">)[\d,]+', r'\g<1>' + f'{int(기타항목["결제배송비(숫자만)"]):,}', result)
+        result = re.sub(r'(<dd class="Summary_area-value__BcN0d">)[\d,]+원', r'\g<1>' + f'{int(기타항목["카드결제금액(숫자만)"]):,}원', result)
         
         # 네이버포인트 계산
         try:
@@ -214,7 +214,7 @@ class NaverpayConverter:
         except:
             기타항목['네이버포인트'] = "0"
         
-        result = re.sub(r'(<em class="OrderDetailPointBanner_point__Z5z-O">최대 )[\d,]+원', f'\g<1>{기타항목["네이버포인트"]}원', result)
+        result = re.sub(r'(<em class="OrderDetailPointBanner_point__Z5z-O">최대 )[\d,]+원', r'\g<1>' + f'{기타항목["네이버포인트"]}원', result)
         
         return result
     
