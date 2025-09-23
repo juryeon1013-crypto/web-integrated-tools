@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}로그 뷰어 - {{ filename }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>로그 뷰어
+                        <small class="ms-2">{{ filename }}</small>
+                    </h4>
+                    <div>
+                        <button class="btn btn-outline-light btn-sm" onclick="refreshLog()">
+                            <i class="fas fa-sync-alt me-1"></i>새로고침
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" onclick="window.close()">
+                            <i class="fas fa-times me-1"></i>닫기
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- 로그 정보 헤더 -->
+                    <div class="bg-light p-3 border-bottom">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>파일명:</strong> {{ filename }}<br>
+                                <strong>총 라인 수:</strong> {{ total_lines }}개
+                            </div>
+                            <div class="col-md-6">
+                                <strong>표시 중:</strong> 최근 {{ lines|length }}개 라인<br>
+                                <strong>마지막 업데이트:</strong> <span id="lastUpdate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 로그 내용 -->
+                    <div class="p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">로그 내용</h6>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-secondary" onclick="toggleWordWrap()">
+                                    <i class="fas fa-text-width me-1"></i>줄바꿈
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="copyToClipboard()">
+                                    <i class="fas fa-copy me-1"></i>복사
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="downloadLog()">
+                                    <i class="fas fa-download me-1"></i>다운로드
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="border rounded" style="max-height: 600px; overflow-y: auto;">
+                            <pre id="logContent" class="p-3 mb-0" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12px;">{% for line in lines %}{{ line }}{% endfor %}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 줄바꿈 토글
+function toggleWordWrap() {
+    const pre = document.getElementById('logContent');
+    if (pre.style.whiteSpace === 'pre-wrap') {
+        pre.style.whiteSpace = 'pre';
+    } else {
+        pre.style.whiteSpace = 'pre-wrap';
+    }
+}
+
+// 클립보드에 복사
+function copyToClipboard() {
+    const content = document.getElementById('logContent').textContent;
+    
+    navigator.clipboard.writeText(content).then(function() {
+        // 성공 알림
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-1"></i>복사됨';
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(function() {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    }).catch(function(err) {
+        console.error('복사 실패: ', err);
+        alert('복사에 실패했습니다.');
+    });
+}
+
+// 로그 다운로드
+function downloadLog() {
+    const content = document.getElementById('logContent').textContent;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '{{ filename }}';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// 로그 새로고침
+function refreshLog() {
+    window.location.reload();
+}
+
+// 마지막 업데이트 시간 표시
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent = now.toLocaleString();
+});
+
+// 키보드 단축키
+document.addEventListener('keydown', function(e) {
+    // Ctrl+C 또는 Cmd+C
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault();
+        copyToClipboard();
+    }
+    // F5 또는 Ctrl+R로 새로고침
+    if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key === 'r')) {
+        e.preventDefault();
+        refreshLog();
+    }
+    // ESC 키로 닫기
+    if (e.key === 'Escape') {
+        window.close();
+    }
+});
+
+// 자동 새로고침 (1분마다)
+setInterval(function() {
+    // 페이지가 포커스되어 있을 때만 새로고침
+    if (!document.hidden) {
+        refreshLog();
+    }
+}, 60000); // 1분 = 60,000ms
+</script>
+{% endblock %}

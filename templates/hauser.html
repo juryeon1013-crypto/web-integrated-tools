@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}하우저 변환기 - 웹 기반 통합 주문 도구{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- 헤더 -->
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bold text-success">
+                    <i class="fas fa-table me-3"></i>하우저 변환기
+                </h1>
+                <p class="lead text-muted">엑셀 파일을 하우저 양식에 맞게 변환합니다</p>
+            </div>
+
+            <!-- 플래시 메시지 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- 업로드 폼 -->
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-upload me-2"></i>엑셀 파일 업로드</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label for="excel_file" class="form-label fw-bold">
+                                <i class="fas fa-file-excel me-2"></i>엑셀 파일 선택
+                            </label>
+                            <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx,.xls" required>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                .xlsx 또는 .xls 파일만 업로드 가능합니다. (최대 10MB)
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success btn-lg" id="hauserSubmitBtn">
+                                <i class="fas fa-magic me-2"></i>변환하기
+                            </button>
+                            <div id="hauserLoading" class="mt-2" style="display: none;">
+                                <div class="spinner-border text-success" role="status">
+                                    <span class="visually-hidden">변환 중...</span>
+                                </div>
+                                <span class="ms-2">변환 중입니다...</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 결과 표시 -->
+            {% if result %}
+            <div class="card shadow-lg mt-5">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>변환 결과</h5>
+                </div>
+                <div class="card-body">
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">✅ 변환 완료</h6>
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                {{ result.message or '하우저 변환이 성공적으로 완료되었습니다!' }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">📁 다운로드</h6>
+                            <div class="d-grid gap-2">
+                                <a href="/download/{{ result.filename }}" class="btn btn-success btn-lg">
+                                    <i class="fas fa-download me-2"></i>변환된 파일 다운로드
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 변환 결과 안내 -->
+                    <div class="alert alert-info">
+                        <h6 class="fw-bold mb-2"><i class="fas fa-info-circle me-2"></i>변환 결과 안내</h6>
+                        <ul class="mb-0">
+                            <li><strong>K~L열</strong>: 원본 상품명과 수량 (회색으로 표시)</li>
+                            <li><strong>M~N열부터</strong>: 변환된 하우저 번호와 수량</li>
+                            <li><strong>검정색</strong>: 정상 변환된 상품</li>
+                            <li><strong>파란색</strong>: 수량 확인이 필요한 상품</li>
+                            <li><strong>빨간색</strong>: 변환 실패한 상품 (하단으로 이동/ 미변환 상품이 포함된 주문 건의 경우 빨간색으로 표시될 수 있음 확인필요)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 사용법 안내 -->
+            <div class="card shadow-lg mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>사용법 안내</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-primary">📋 변환 과정</h6>
+                            <ol class="list-group list-group-numbered">
+                                <li class="list-group-item">K열의 상품명을 읽어옵니다</li>
+                                <li class="list-group-item">줄바꿈 기준으로 상품명을 분리합니다</li>
+                                <li class="list-group-item">각 상품명에 맞는 하우저 번호를 찾습니다</li>
+                                <li class="list-group-item">결과를 새로운 엑셀 파일로 저장합니다</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-success">✅ 변환 조건</h6>
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    모델명: 상품명 괄호 안에 참조 모델명 포함
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    색상: 상품명에 참조 색상 포함
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    높이: 상품명 괄호 안에 참조 높이 포함
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 하우저 변환 로딩 표시 함수
+function showHauserLoading() {
+    document.getElementById('hauserLoading').style.display = 'block';
+    document.getElementById('hauserSubmitBtn').disabled = true;
+}
+
+// 로딩 숨기기 함수
+function hideHauserLoading() {
+    document.getElementById('hauserLoading').style.display = 'none';
+    document.getElementById('hauserSubmitBtn').disabled = false;
+}
+
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    // 하우저 변환 폼 제출 시 로딩 표시
+    const hauserForm = document.querySelector('form[method="POST"]');
+    if (hauserForm) {
+        hauserForm.addEventListener('submit', function() {
+            showHauserLoading();
+        });
+    }
+    
+    // 페이지 로드 시 로딩 숨기기 (폼 제출 후 페이지 새로고침 시)
+    hideHauserLoading();
+});
+</script>
+
+{% endblock %}

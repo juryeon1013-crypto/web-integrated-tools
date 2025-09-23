@@ -1,0 +1,667 @@
+{% extends "base.html" %}
+
+{% block title %}도매꾹 주문내역 수정기{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <!-- 헤더 -->
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bold text-primary">
+                    <i class="fas fa-file-code me-3"></i>도매꾹 변환기
+                </h1>
+                <p class="lead text-muted">도매꾹 주문내역 HTML을 수정하고 변환합니다</p>
+            </div>
+    
+    <!-- Flash 메시지 표시 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- 탭 네비게이션 -->
+    <ul class="nav nav-tabs" id="domeggookTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="order-tab" data-bs-toggle="tab" data-bs-target="#order-pane" type="button" role="tab">
+                <i class="fas fa-edit me-2"></i>주문내역 수정
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="card-tab" data-bs-toggle="tab" data-bs-target="#card-pane" type="button" role="tab">
+                <i class="fas fa-credit-card me-2"></i>카드영수증 생성
+            </button>
+        </li>
+    </ul>
+
+    <!-- 탭 콘텐츠 -->
+    <div class="tab-content" id="domeggookTabsContent">
+        <!-- 주문내역 수정 탭 -->
+        <div class="tab-pane fade show active" id="order-pane" role="tabpanel" aria-labelledby="order-tab">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-edit me-2"></i>주문내역 수정</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="mb-4">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="html_content" class="form-label">HTML 바디 태그 (읽기 전용)</label>
+                    <textarea class="form-control" id="html_content" name="html_content" rows="10" 
+                              placeholder="HTML 바디 태그 내용을 입력하세요..." readonly>{{ request.form.html_content or default_template or '' }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="option_count" class="form-label">사용할 옵션 개수 (1~5)</label>
+                    <select class="form-select" id="option_count" name="option_count">
+                        <option value="1" {{ 'selected' if request.form.option_count == '1' else '' }}>1개</option>
+                        <option value="2" {{ 'selected' if request.form.option_count == '2' else '' }}>2개</option>
+                        <option value="3" {{ 'selected' if request.form.option_count == '3' else '' }}>3개</option>
+                        <option value="4" {{ 'selected' if request.form.option_count == '4' else '' }}>4개</option>
+                        <option value="5" {{ 'selected' if request.form.option_count == '5' else '' }}>5개</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h5>기본 주문 정보</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="order_number" class="form-label">주문번호 뒷 4자리 (숫자만 입력)</label>
+                            <input type="text" class="form-control" id="order_number" name="order_number" 
+                                   value="{{ request.form.order_number or '' }}" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="product_title" class="form-label">상품제목</label>
+                            <input type="text" class="form-control" id="product_title" name="product_title" 
+                                   value="{{ request.form.product_title or '' }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="supplier_name" class="form-label">공급사이름</label>
+                            <input type="text" class="form-control" id="supplier_name" name="supplier_name" 
+                                   value="{{ request.form.supplier_name or '' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="supplier_email" class="form-label">공급사이메일</label>
+                            <input type="text" class="form-control" id="supplier_email" name="supplier_email" 
+                                   value="{{ request.form.supplier_email or '' }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="supplier_phone" class="form-label">공급사연락처 (-포함 입력)</label>
+                            <input type="text" class="form-control" id="supplier_phone" name="supplier_phone" 
+                                   value="{{ request.form.supplier_phone or '' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">주문수량 (숫자만 입력)</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   value="{{ request.form.quantity or '' }}" min="1" step="1">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="payment_amount" class="form-label">결제금액 (숫자만 입력)</label>
+                            <input type="text" class="form-control" id="payment_amount" name="payment_amount" 
+                                   value="{{ request.form.payment_amount or '' }}" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="order_date" class="form-label">주문일시 (YYYYMMDD, 숫자만 입력)</label>
+                            <input type="text" class="form-control" id="order_date" name="order_date" 
+                                   value="{{ request.form.order_date or '' }}" maxlength="8" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,8)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h5>상품주문옵션</h5>
+                <div id="options-container">
+                    <!-- 옵션 필드들이 동적으로 생성됩니다 -->
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h5>수령자 정보</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="recipient_name" class="form-label">수령자이름</label>
+                            <input type="text" class="form-control" id="recipient_name" name="recipient_name" 
+                                   value="{{ request.form.recipient_name or '' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">휴대전화 (-빼고 입력)</label>
+                            <input type="text" class="form-control" id="phone" name="phone" 
+                                   value="{{ request.form.phone or '' }}" maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="address" class="form-label">수령지주소</label>
+                    <input type="text" class="form-control" id="address" name="address" 
+                           value="{{ request.form.address or '' }}">
+                </div>
+            </div>
+        </div>
+        
+        
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg" id="orderSubmitBtn">주문내역 수정</button>
+                    <div id="orderLoading" class="mt-2" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">변환 중...</span>
+                        </div>
+                        <span class="ms-2">변환 중입니다...</span>
+                    </div>
+                </div>
+                    </form>
+                </div>
+            </div>
+            
+            {% if result %}
+            <!-- 주문내역 수정 결과 -->
+            <div class="card shadow-lg mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>주문내역 수정 결과</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="mb-3" style="max-height: 400px; overflow-y: auto;">{{ result }}</pre>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-success" onclick="copyToClipboard()">복사</button>
+                        {% if download_file %}
+                        <a href="/download/{{ download_file }}" class="btn btn-info">다운로드</a>
+                        {% else %}
+                        <button class="btn btn-info" onclick="downloadResult()">다운로드</button>
+                        {% endif %}
+                        <button class="btn btn-warning" onclick="switchToCardTab()">카드영수증 생성</button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- 카드영수증 생성 탭 -->
+        <div class="tab-pane fade" id="card-pane" role="tabpanel" aria-labelledby="card-tab">
+            <div class="card shadow-lg">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>카드영수증 생성</h5>
+                </div>
+                <div class="card-body">
+                    <div class="card">
+                    <div class="card-body">
+                        <form id="cardReceiptForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>자동 계산된 값들 (읽기 전용)</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">주문번호</label>
+                                        <input type="text" class="form-control" id="auto_order_number" readonly value="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">거래일시</label>
+                                        <input type="text" class="form-control" id="auto_transaction_time" readonly value="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">승인번호</label>
+                                        <input type="text" class="form-control" id="auto_approval_number" readonly value="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">상품정보</label>
+                                        <input type="text" class="form-control" id="auto_product_info" readonly value="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">공급가</label>
+                                        <input type="text" class="form-control" id="auto_supply_amount" readonly value="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">부가세</label>
+                                        <input type="text" class="form-control" id="auto_vat_amount" readonly value="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">면세금액</label>
+                                        <input type="text" class="form-control" id="auto_tax_free_amount" readonly value="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">합계금액</label>
+                                        <input type="text" class="form-control" id="auto_total_amount" readonly value="">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>입력 필수 항목</h6>
+                                    <div class="mb-3">
+                                        <label for="card_store_name" class="form-label">상점명 *</label>
+                                                                        <input type="text" class="form-control" id="card_store_name" name="store_name" 
+                                       value="" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="card_business_number" class="form-label">사업자등록번호 * (10자리 숫자)</label>
+                                                                        <input type="text" class="form-control" id="card_business_number" name="business_number" 
+                                       value="" maxlength="10" 
+                                       inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="card_ceo_name" class="form-label">대표자명 *</label>
+                                                                        <input type="text" class="form-control" id="card_ceo_name" name="ceo_name" 
+                                       value="" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="card_supplier_address" class="form-label">공급자 주소 *</label>
+                                                                        <input type="text" class="form-control" id="card_supplier_address" name="supplier_address" 
+                                       value="" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="card_supplier_contact" class="form-label">공급자 연락처 *</label>
+                                                                        <input type="text" class="form-control" id="card_supplier_contact" name="supplier_contact" 
+                                       value="" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <button type="button" class="btn btn-primary" id="cardSubmitBtn" onclick="showCardLoading()">카드영수증 생성</button>
+                                <div id="cardLoading" class="mt-2" style="display: none;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">변환 중...</span>
+                                    </div>
+                                    <span class="ms-2">변환 중입니다...</span>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 카드영수증 결과 표시 영역 -->
+                <div id="card-receipt-result" class="mt-4" style="display: none;">
+                    <div class="card shadow-lg">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>카드영수증 결과</h5>
+                        </div>
+                        <div class="card-body">
+                            <pre id="card-receipt-content" class="mb-3" style="max-height: 400px; overflow-y: auto;"></pre>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-success" onclick="copyCardReceipt()">복사</button>
+                                <button class="btn btn-info" onclick="downloadCardReceipt()">다운로드</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 서버에서 전송된 폼 데이터를 JavaScript 변수로 저장
+const submittedFormData = {{ request.form | tojson | safe }};
+
+// 옵션 개수에 따른 동적 필드 생성
+document.getElementById('option_count').addEventListener('change', function() {
+    const count = parseInt(this.value);
+    const container = document.getElementById('options-container');
+    container.innerHTML = '';
+    
+    for (let i = 1; i <= count; i++) {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'mb-3';
+        // 서버에서 전송된 폼 데이터에서 기존 값들을 읽어옴
+        const existingName = (submittedFormData && submittedFormData[`option_${i}_name`]) || '';
+        const existingQuantity = (submittedFormData && submittedFormData[`option_${i}_quantity`]) || '';
+        const existingPrice = (submittedFormData && submittedFormData[`option_${i}_price`]) || '';
+        
+        optionDiv.innerHTML = `
+            <h6>옵션 ${i}</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">상품명</label>
+                    <input type="text" class="form-control" name="option_${i}_name" 
+                           value="${existingName}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">개수 (숫자만 입력)</label>
+                    <input type="number" class="form-control" name="option_${i}_quantity" 
+                           value="${existingQuantity}" min="1" step="1">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">금액 (숫자만 입력)</label>
+                    <input type="text" class="form-control" name="option_${i}_price" 
+                           value="${existingPrice}" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                </div>
+            </div>
+        `;
+        container.appendChild(optionDiv);
+    }
+});
+
+// 페이지 로드 시 초기 옵션 필드 생성
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('option_count').dispatchEvent(new Event('change'));
+    
+    // 카드영수증 탭은 자동으로 데이터를 채우지 않음
+    // 오직 "카드영수증 생성" 버튼을 눌렀을 때만 데이터가 채워짐
+    
+    // 주문내역 수정 폼 제출 시 로딩 표시
+    const orderForm = document.querySelector('form[method="POST"]');
+    if (orderForm) {
+        orderForm.addEventListener('submit', function() {
+            showOrderLoading();
+        });
+    }
+    
+    // 페이지 로드 시 로딩 숨기기 (폼 제출 후 페이지 새로고침 시)
+    hideOrderLoading();
+});
+
+// 클립보드 복사 함수
+function copyToClipboard() {
+    const result = document.querySelector('pre').textContent;
+    navigator.clipboard.writeText(result).then(function() {
+        alert('클립보드에 복사되었습니다!');
+    });
+}
+
+// 결과 다운로드 함수
+function downloadResult() {
+    const result = document.querySelector('pre').textContent;
+    const blob = new Blob([result], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'domeggook_result.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// 주문내역 수정 결과에서 생성된 시간 추출
+function extractGeneratedTime() {
+    const resultText = document.querySelector('pre').textContent;
+    console.log('주문내역 결과 텍스트:', resultText); // 디버깅용
+    
+    // 더 정확한 패턴으로 시도
+    let timeMatch = resultText.match(/주문일시[:\s]*(\d{4}\/\d{2}\/\d{2})\s+(\d{2}:\d{2}:\d{2})/);
+    if (!timeMatch) {
+        timeMatch = resultText.match(/주문일시[:\s]*(\d{4}\/\d{2}\/\d{2})\s+(\d{2}:\d{2}:\d{2})/);
+    }
+    if (!timeMatch) {
+        timeMatch = resultText.match(/주문일시[:\s]*(\d{4}\/\d{2}\/\d{2})\s+(\d{2}:\d{2}:\d{2})/);
+    }
+    if (!timeMatch) {
+        timeMatch = resultText.match(/(\d{4}\/\d{2}\/\d{2})\s+(\d{2}:\d{2}:\d{2})/);
+    }
+    if (!timeMatch) {
+        timeMatch = resultText.match(/(\d{4}\/\d{2}\/\d{2})\s+(\d{2}:\d{2}:\d{2})/);
+    }
+    
+    if (timeMatch) {
+        const result = `${timeMatch[1]} ${timeMatch[2]}`;
+        console.log('추출된 시간:', result); // 디버깅용
+        return result;  // "2026/06/02 16:47:18"
+    }
+    console.log('시간 추출 실패 - 전체 텍스트:', resultText); // 디버깅용
+    return null;
+}
+
+// 카드영수증 탭으로 전환하는 함수
+function switchToCardTab() {
+    // 주문내역 폼에서 데이터 가져와서 자동 계산
+    const orderData = {
+        order_date: document.getElementById('order_date').value,
+        payment_amount: document.getElementById('payment_amount').value,
+        order_number: document.getElementById('order_number').value,
+        product_title: document.getElementById('product_title').value,
+        supplier_phone: document.getElementById('supplier_phone').value
+    };
+    
+    // 자동 계산된 값들을 카드영수증 섹션에 채우기
+    calculateAndFillCardValues(orderData);
+    
+    // 카드영수증 탭으로 전환
+    const cardTab = new bootstrap.Tab(document.getElementById('card-tab'));
+    cardTab.show();
+}
+
+// 자동 계산된 값들을 카드영수증 섹션에 채우기
+function calculateAndFillCardValues(orderData) {
+    // 기존 프로그램의 calculate_card_values 로직과 동일
+    const order_date = orderData.order_date || '';
+    const payment_amount = parseInt((orderData.payment_amount || '0').replace(',', ''));
+    const order_number = orderData.order_number || '';
+    const product_title = orderData.product_title || '';
+    const supplier_phone = orderData.supplier_phone || '';
+    
+    // 1. 주문번호 계산
+    let date_formatted;
+    if (order_date.includes(' ')) {
+        const date_part = order_date.split(' ')[0];
+        date_formatted = date_part.length >= 8 ? date_part.slice(0, 8) : "20250101";
+    } else {
+        date_formatted = order_date.length >= 8 ? order_date.slice(0, 8) : "20250101";
+    }
+    
+    const random_suffix = Math.floor(Math.random() * 900) + 100;
+    const card_order_number = date_formatted + "165233" + random_suffix;
+    
+    // 2. 거래일시 계산 - 주문내역에서 생성된 시간 사용
+    let transaction_time = extractGeneratedTime();
+    console.log('extractGeneratedTime() 결과:', transaction_time); // 디버깅용
+    if (!transaction_time) {
+        console.log('extractGeneratedTime()이 null을 반환했습니다. 기존 로직 사용'); // 디버깅용
+        // 주문내역에서 시간을 못 찾으면 기존 로직 사용
+        const random_hour = Math.floor(Math.random() * 24);
+        const random_minute = Math.floor(Math.random() * 60);
+        const random_second = Math.floor(Math.random() * 60);
+        const random_time = `${random_hour.toString().padStart(2, '0')}:${random_minute.toString().padStart(2, '0')}:${random_second.toString().padStart(2, '0')}`;
+        
+        if (order_date.includes(' ')) {
+            const date_part = order_date.split(' ')[0];
+            if (date_part.length >= 8) {
+                transaction_time = `${date_part.slice(0, 4)}/${date_part.slice(4, 6)}/${date_part.slice(6, 8)} ${random_time}`;
+            } else {
+                transaction_time = `${date_formatted.slice(0, 4)}/${date_formatted.slice(4, 6)}/${date_formatted.slice(6, 8)} ${random_time}`;
+            }
+        } else {
+            transaction_time = `${date_formatted.slice(0, 4)}/${date_formatted.slice(4, 6)}/${date_formatted.slice(6, 8)} ${random_time}`;
+        }
+    } else {
+        console.log('extractGeneratedTime()에서 시간을 성공적으로 가져왔습니다:', transaction_time); // 디버깅용
+    }
+    
+    // 3. 승인번호 계산
+    const approval_number = "3026" + (Math.floor(Math.random() * 9000) + 1000);
+    
+    // 4. 상품정보 계산
+    const final_order_number = "OR6461" + order_number;
+    const product_info = `${final_order_number} ${product_title}`;
+    
+    // 5. 공급가 계산
+    const supply_amount = Math.floor(payment_amount / 1.1);
+    
+    // 6. 부가세 계산
+    const vat_amount = payment_amount - supply_amount;
+    
+    // 7. 면세금액 (고정 0)
+    const tax_free_amount = 0;
+    
+    // 8. 합계금액
+    const total_amount = payment_amount;
+    
+    // 카드영수증 섹션에 값 채우기
+    document.getElementById('auto_order_number').value = card_order_number;
+    document.getElementById('auto_transaction_time').value = transaction_time;
+    document.getElementById('auto_approval_number').value = approval_number;
+    document.getElementById('auto_product_info').value = product_info;
+    document.getElementById('auto_supply_amount').value = supply_amount.toLocaleString();
+    document.getElementById('auto_vat_amount').value = vat_amount.toLocaleString();
+    document.getElementById('auto_tax_free_amount').value = tax_free_amount.toLocaleString();
+    document.getElementById('auto_total_amount').value = total_amount.toLocaleString();
+    
+    // 공급자 연락처 자동 설정
+    if (supplier_phone) {
+        document.getElementById('card_supplier_contact').value = `Tel.${supplier_phone}`;
+    } else {
+        document.getElementById('card_supplier_contact').value = "Tel.053-639-6981";
+    }
+}
+
+// 주문내역 수정 로딩 표시 함수
+function showOrderLoading() {
+    document.getElementById('orderLoading').style.display = 'block';
+    document.getElementById('orderSubmitBtn').disabled = true;
+}
+
+// 카드영수증 생성 로딩 표시 함수
+function showCardLoading() {
+    document.getElementById('cardLoading').style.display = 'block';
+    document.getElementById('cardSubmitBtn').disabled = true;
+    generateCardReceipt();
+}
+
+// 로딩 숨기기 함수
+function hideOrderLoading() {
+    document.getElementById('orderLoading').style.display = 'none';
+    document.getElementById('orderSubmitBtn').disabled = false;
+}
+
+function hideCardLoading() {
+    document.getElementById('cardLoading').style.display = 'none';
+    document.getElementById('cardSubmitBtn').disabled = false;
+}
+
+// 카드영수증 생성 함수
+function generateCardReceipt() {
+    // 주문내역 폼에서 데이터 가져와서 자동 계산된 값들 채우기
+    const orderData = {
+        order_date: document.getElementById('order_date').value,
+        payment_amount: document.getElementById('payment_amount').value,
+        order_number: document.getElementById('order_number').value,
+        product_title: document.getElementById('product_title').value,
+        supplier_phone: document.getElementById('supplier_phone').value
+    };
+    
+    // 자동 계산된 값들을 카드영수증 섹션에 채우기
+    calculateAndFillCardValues(orderData);
+    
+    // 폼 데이터 수집
+    const formData = new FormData();
+    formData.append('action', 'generate_card_receipt');
+    
+    // 주문내역 폼의 모든 데이터 수집
+    const mainForm = document.querySelector('form');
+    const mainFormElements = mainForm.querySelectorAll('input, select, textarea');
+    mainFormElements.forEach(element => {
+        if (element.name && element.value) {
+            formData.append(element.name, element.value);
+        }
+    });
+    
+    // 카드영수증 폼의 데이터 수집
+    const cardForm = document.getElementById('cardReceiptForm');
+    const cardFormElements = cardForm.querySelectorAll('input, select, textarea');
+    cardFormElements.forEach(element => {
+        if (element.name && element.value) {
+            formData.append(element.name, element.value);
+        }
+    });
+    
+    // 자동 계산된 값들도 추가
+    formData.append('card_order_number', document.getElementById('auto_order_number').value);
+    formData.append('transaction_time', document.getElementById('auto_transaction_time').value);
+    formData.append('approval_number', document.getElementById('auto_approval_number').value);
+    formData.append('product_info', document.getElementById('auto_product_info').value);
+    formData.append('supply_amount', document.getElementById('auto_supply_amount').value.replace(/,/g, ''));
+    formData.append('vat_amount', document.getElementById('auto_vat_amount').value.replace(/,/g, ''));
+    formData.append('tax_free_amount', document.getElementById('auto_tax_free_amount').value.replace(/,/g, ''));
+    formData.append('total_amount', document.getElementById('auto_total_amount').value.replace(/,/g, ''));
+    
+    // AJAX 요청으로 카드영수증 생성
+    fetch('/domeggook', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideCardLoading(); // 로딩 숨기기
+        if (data.success) {
+            // 카드영수증 결과 표시
+            document.getElementById('card-receipt-content').textContent = data.card_receipt;
+            document.getElementById('card-receipt-result').style.display = 'block';
+            
+            // 서버에서 저장된 파일이 있으면 다운로드 링크 표시
+            if (data.download_file) {
+                const downloadBtn = document.querySelector('#card-receipt-result .btn-info');
+                downloadBtn.innerHTML = `<a href="/download/${data.download_file}" class="btn btn-info text-decoration-none">다운로드</a>`;
+            }
+            
+            // 카드영수증 결과로 스크롤
+            document.getElementById('card-receipt-result').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert('카드영수증 생성 중 오류가 발생했습니다: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideCardLoading(); // 로딩 숨기기
+        console.error('Error:', error);
+        alert('카드영수증 생성 중 오류가 발생했습니다.');
+    });
+}
+
+// 카드영수증 복사 함수
+function copyCardReceipt() {
+    const cardReceipt = document.getElementById('card-receipt-content').textContent;
+    navigator.clipboard.writeText(cardReceipt).then(function() {
+        alert('카드영수증이 클립보드에 복사되었습니다!');
+    });
+}
+
+// 카드영수증 다운로드 함수
+function downloadCardReceipt() {
+    const cardReceipt = document.getElementById('card-receipt-content').textContent;
+    const blob = new Blob([cardReceipt], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'domeggook_card_receipt.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+</script>
+        </div>
+    </div>
+</div>
+{% endblock %}

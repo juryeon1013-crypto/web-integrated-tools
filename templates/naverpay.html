@@ -1,0 +1,716 @@
+{% extends "base.html" %}
+
+{% block title %}네이버페이 변환기 - 웹 기반 통합 주문 도구{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <!-- 헤더 -->
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bold text-warning">
+                    <i class="fas fa-shopping-cart me-3"></i>네이버페이 변환기
+                </h1>
+                <p class="lead text-muted">네이버페이 옵션과 카드영수증을 변환합니다</p>
+            </div>
+
+            <!-- 플래시 메시지 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+
+            <!-- 탭 네비게이션 -->
+            <ul class="nav nav-tabs" id="naverpayTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if not active_tab or active_tab == 'order' %}active{% endif %}" id="order-tab" data-bs-toggle="tab" data-bs-target="#order-pane" type="button" role="tab">
+                        <i class="fas fa-shopping-bag me-2"></i>주문내역 변환
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if active_tab == 'card' %}active{% endif %}" id="card-tab" data-bs-toggle="tab" data-bs-target="#card-pane" type="button" role="tab">
+                        <i class="fas fa-credit-card me-2"></i>카드영수증 변환
+                    </button>
+                </li>
+            </ul>
+
+            <!-- 탭 콘텐츠 -->
+            <div class="tab-content" id="naverpayTabsContent">
+                <!-- 주문내역 변환 탭 -->
+                <div class="tab-pane fade {% if not active_tab or active_tab == 'order' %}show active{% endif %}" id="order-pane" role="tabpanel">
+                    <div class="card shadow-lg">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="fas fa-edit me-2"></i>주문내역 HTML 변환</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="/naverpay/convert">
+                                <!-- HTML 내용 입력 -->
+                                <div class="mb-4">
+                                    <label for="html_content" class="form-label fw-bold">
+                                        <i class="fas fa-code me-2"></i>네이버페이 주문내역 HTML
+                                    </label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="html_content" 
+                                        name="html_content" 
+                                        rows="15" 
+                                        placeholder="네이버페이 주문내역의 HTML 내용을 붙여넣으세요..."
+                                        required
+                                    >{{ html_content or '' }}</textarea>
+                                    <div class="form-text">네이버페이 주문내역 페이지의 HTML을 복사해서 붙여넣으세요.</div>
+                                </div>
+
+                                <!-- 옵션 개수 -->
+                                <div class="mb-4">
+                                    <label for="option_count" class="form-label fw-bold">
+                                        <i class="fas fa-list me-2"></i>사용할 옵션 개수
+                                    </label>
+                                    <select class="form-select" id="option_count" name="option_count" required>
+                                        <option value="1" {% if option_count == 1 %}selected{% endif %}>1개</option>
+                                        <option value="2" {% if option_count == 2 %}selected{% endif %}>2개</option>
+                                        <option value="3" {% if option_count == 3 %}selected{% endif %}>3개</option>
+                                        <option value="4" {% if option_count == 4 %}selected{% endif %}>4개</option>
+                                        <option value="5" {% if option_count == 5 %}selected{% endif %}>5개</option>
+                                    </select>
+                                    <div class="form-text">사은품은 자동으로 제거됩니다.</div>
+                                </div>
+
+                                <!-- 구매확정일 입력 필드 제거됨 - HTML에서 자동 추출 -->
+
+                                <!-- 옵션별 입력 필드들 (동적으로 생성) -->
+                                <div id="option-fields" class="mb-4" style="display: none;">
+                                    <h6 class="fw-bold text-primary mb-3">옵션별 상품 정보 입력</h6>
+                                    <div id="option-inputs">
+                                        <!-- JavaScript로 동적 생성 -->
+                                    </div>
+                                    
+                                    <h6 class="fw-bold text-primary mb-3 mt-4">기타 항목 입력</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="스토어명" class="form-label">스토어명</label>
+                                                <input type="text" class="form-control" id="스토어명" name="스토어명" value="{{ 기타항목.스토어명 if 기타항목 else '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="배송비" class="form-label">배송비(배송비 없을 경우 '무료 배송' 입력)</label>
+                                                <input type="text" class="form-control" id="배송비" name="배송비" value="{{ 기타항목.배송비 if 기타항목 else '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="수령자명" class="form-label">수령자명(이름만 입력/ 입력 시 자동으로 '이름(이름)' 형태로 저장)</label>
+                                                <input type="text" class="form-control" id="수령자명" name="수령자명" value="{{ 기타항목.수령자명 if 기타항목 else '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="연락처" class="form-label">연락처(-포함입력)</label>
+                                                <input type="text" class="form-control" id="연락처" name="연락처" value="{{ 기타항목.연락처 if 기타항목 else '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="주소" class="form-label">주소</label>
+                                                <input type="text" class="form-control" id="주소" name="주소" value="{{ 기타항목.주소 if 기타항목 else '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="주문금액(총결제금액, 숫자만)" class="form-label">주문금액(총결제금액, 숫자만)</label>
+                                                <input type="text" class="form-control" id="주문금액(총결제금액, 숫자만)" name="주문금액(총결제금액, 숫자만)" value="{{ 기타항목['주문금액(총결제금액, 숫자만)'] if 기타항목 else '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="상품금액(숫자만)" class="form-label">상품금액(숫자만)</label>
+                                                <input type="text" class="form-control" id="상품금액(숫자만)" name="상품금액(숫자만)" value="{{ 기타항목['상품금액(숫자만)'] if 기타항목 else '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="쿠폰할인(숫자만, 0입력시 div삭제)" class="form-label">쿠폰할인(숫자만, 0입력시 div삭제)</label>
+                                                <input type="text" class="form-control" id="쿠폰할인(숫자만, 0입력시 div삭제)" name="쿠폰할인(숫자만, 0입력시 div삭제)" value="{{ 기타항목['쿠폰할인(숫자만, 0입력시 div삭제)'] if 기타항목 else '0' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="결제배송비(숫자만)" class="form-label">결제배송비(숫자만/무료배송시 0 입력)</label>
+                                                <input type="text" class="form-control" id="결제배송비(숫자만)" name="결제배송비(숫자만)" value="{{ 기타항목['결제배송비(숫자만)'] if 기타항목 else '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="카드결제금액(숫자만)" class="form-label">카드결제금액(숫자만)</label>
+                                                <input type="text" class="form-control" id="카드결제금액(숫자만)" name="카드결제금액(숫자만)" value="{{ 기타항목['카드결제금액(숫자만)'] if 기타항목 else '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 변환 버튼 -->
+                                <div class="text-center">
+                                    <button type="button" id="preview-btn" class="btn btn-outline-warning btn-lg me-3">
+                                        <i class="fas fa-eye me-2"></i>미리보기
+                                    </button>
+                                    <button type="submit" id="convert-btn" class="btn btn-warning btn-lg" style="display: none;">
+                                        <i class="fas fa-magic me-2"></i>주문내역 변환하기
+                                    </button>
+                                    <div id="orderLoading" class="mt-2" style="display: none;">
+                                        <div class="spinner-border text-warning" role="status">
+                                            <span class="visually-hidden">변환 중...</span>
+                                        </div>
+                                        <span class="ms-2">변환 중입니다...</span>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 주문내역 결과 표시 -->
+                    {% if order_result %}
+                    <div class="card shadow-lg mt-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>주문내역 변환 결과</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <button class="btn btn-outline-success btn-sm" onclick="copyOrderResult()">
+                                    <i class="fas fa-copy me-1"></i>결과 복사
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="downloadOrderResult()">
+                                    <i class="fas fa-download me-1"></i>텍스트 파일 다운로드
+                                </button>
+                            </div>
+                            <textarea class="form-control" id="order-result-content" rows="20" readonly>{{ order_result }}</textarea>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 카드영수증 변환 탭 -->
+                <div class="tab-pane fade {% if active_tab == 'card' %}show active{% endif %}" id="card-pane" role="tabpanel">
+                    <div class="card shadow-lg">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>카드영수증 HTML 변환</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="/naverpay/card">
+                                <!-- 주문내역 데이터 유지용 숨겨진 필드들 -->
+                                <input type="hidden" name="html_content" value="{{ html_content or '' }}">
+                                <input type="hidden" name="option_count" value="{{ option_count or 5 }}">
+                                
+                                <!-- 카드영수증 HTML 입력 -->
+                                <div class="mb-4">
+                                    <label for="card_html_content" class="form-label fw-bold">
+                                        <i class="fas fa-code me-2"></i>카드영수증 HTML
+                                    </label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="card_html_content" 
+                                        name="card_html_content" 
+                                        rows="15" 
+                                        placeholder="카드영수증의 HTML 내용을 붙여넣으세요..."
+                                        required
+                                    >{{ card_html_content or '' }}</textarea>
+                                    <div class="form-text">카드영수증 페이지의 HTML을 복사해서 붙여넣으세요.</div>
+                                </div>
+
+                                <!-- 주문내역 불러오기 버튼 -->
+                                <div class="mb-4">
+                                    <button type="button" class="btn btn-outline-primary" onclick="loadOrderInfo()">
+                                        <i class="fas fa-upload me-2"></i>주문내역에서 정보 불러오기
+                                    </button>
+                                    <div class="form-text">주문내역 변환 결과에서 상품명과 금액을 자동으로 불러옵니다.</div>
+                                </div>
+
+                                <!-- 카드영수증 입력 필드들 -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="product" class="form-label">상품명</label>
+                                            <input type="text" class="form-control" id="product" name="product" value="{{ card_data.product if card_data else '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="seller" class="form-label">판매자상호</label>
+                                            <input type="text" class="form-control" id="seller" name="seller" value="{{ card_data.seller if card_data else '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="ceo" class="form-label">대표자명</label>
+                                            <input type="text" class="form-control" id="ceo" name="ceo" value="{{ card_data.ceo if card_data else '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="biznum" class="form-label">사업자등록번호(-미포함)</label>
+                                            <input type="text" class="form-control" id="biznum" name="biznum" value="{{ card_data.biznum if card_data else '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="phone" class="form-label">전화번호(-포함입력)</label>
+                                            <input type="text" class="form-control" id="phone" name="phone" value="{{ card_data.phone if card_data else '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="address" class="form-label">사업장주소</label>
+                                            <input type="text" class="form-control" id="address" name="address" value="{{ card_data.address if card_data else '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="approval_amount" class="form-label">승인금액</label>
+                                            <input type="text" class="form-control" id="approval_amount" name="approval_amount" value="{{ card_data.approval_amount if card_data else '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="supply_amount" class="form-label">공급가액</label>
+                                            <input type="text" class="form-control" id="supply_amount" name="supply_amount" value="{{ card_data.supply_amount if card_data else '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="tax_amount" class="form-label">부가세액</label>
+                                            <input type="text" class="form-control" id="tax_amount" name="tax_amount" value="{{ card_data.tax_amount if card_data else '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="service_fee" class="form-label">봉사료</label>
+                                            <input type="text" class="form-control" id="service_fee" name="service_fee" value="{{ card_data.service_fee if card_data else '0' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="total" class="form-label">합계</label>
+                                            <input type="text" class="form-control" id="total" name="total" value="{{ card_data.total if card_data else '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="autoCalculate()">
+                                                <i class="fas fa-calculator me-2"></i>자동계산
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 변환 버튼 -->
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-info btn-lg" id="cardSubmitBtn">
+                                        <i class="fas fa-credit-card me-2"></i>카드영수증 변환하기
+                                    </button>
+                                    <div id="cardLoading" class="mt-2" style="display: none;">
+                                        <div class="spinner-border text-info" role="status">
+                                            <span class="visually-hidden">변환 중...</span>
+                                        </div>
+                                        <span class="ms-2">변환 중입니다...</span>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 카드영수증 결과 표시 -->
+                    {% if card_result %}
+                    <div class="card shadow-lg mt-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>카드영수증 변환 결과</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <button class="btn btn-outline-info btn-sm" onclick="copyCardResult()">
+                                    <i class="fas fa-copy me-1"></i>결과 복사
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="downloadCardResult()">
+                                    <i class="fas fa-download me-1"></i>텍스트 파일 다운로드
+                                </button>
+                            </div>
+                            <textarea class="form-control" id="card-result-content" rows="20" readonly>{{ card_result }}</textarea>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 사용법 안내 -->
+            <div class="card shadow-lg mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>사용법 안내</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-primary">🔄 주문내역 변환 과정</h6>
+                            <ol class="list-group list-group-numbered">
+                                <li class="list-group-item">HTML 입력 → 옵션 개수 선택</li>
+                                <li class="list-group-item">샘플코드로 교체 → 구매확정일 수정</li>
+                                <li class="list-group-item">옵션별 상품 정보 입력</li>
+                                <li class="list-group-item">기타 항목들 입력 후 변환</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-success">💳 카드영수증 변환 과정</h6>
+                            <ol class="list-group list-group-numbered">
+                                <li class="list-group-item">카드영수증 HTML 입력</li>
+                                <li class="list-group-item">주문내역에서 정보 자동 불러오기</li>
+                                <li class="list-group-item">필요한 정보 입력 후 자동계산</li>
+                                <li class="list-group-item">카드영수증 변환 완료</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 주문내역 결과 복사 기능
+function copyOrderResult() {
+    const resultText = document.getElementById('order-result-content');
+    resultText.select();
+    document.execCommand('copy');
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check me-1"></i>복사 완료!';
+    button.classList.remove('btn-outline-success');
+    button.classList.add('btn-success');
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-success');
+    }, 2000);
+}
+
+// 주문내역 결과 다운로드 기능
+function downloadOrderResult() {
+    const resultText = document.getElementById('order-result-content').value;
+    const blob = new Blob([resultText], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    // 동적 파일명 생성 (날짜_상품명_주문내역.txt)
+    const today = new Date();
+    const dateStr = today.getFullYear().toString().slice(-2) + 
+                   String(today.getMonth() + 1).padStart(2, '0') + 
+                   String(today.getDate()).padStart(2, '0');
+    // 상품명은 첫 번째 옵션에서 가져오거나 기본값 사용
+    const firstOptionName = document.querySelector('input[name="option_0_상품명"]');
+    const productName = firstOptionName ? firstOptionName.value : '상품';
+    a.download = `${dateStr}_${productName}_주문내역.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// 카드영수증 결과 복사 기능
+function copyCardResult() {
+    const resultText = document.getElementById('card-result-content');
+    resultText.select();
+    document.execCommand('copy');
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check me-1"></i>복사 완료!';
+    button.classList.remove('btn-outline-info');
+    button.classList.add('btn-success');
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-info');
+    }, 2000);
+}
+
+// 카드영수증 결과 다운로드 기능
+function downloadCardResult() {
+    const resultText = document.getElementById('card-result-content').value;
+    const blob = new Blob([resultText], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    // 동적 파일명 생성 (날짜_상품명_카드영수증.txt)
+    const today = new Date();
+    const dateStr = today.getFullYear().toString().slice(-2) + 
+                   String(today.getMonth() + 1).padStart(2, '0') + 
+                   String(today.getDate()).padStart(2, '0');
+    // 상품명은 카드영수증 폼에서 가져오거나 기본값 사용
+    const productInput = document.getElementById('product');
+    const productName = productInput ? productInput.value : '상품';
+    a.download = `${dateStr}_${productName}_카드영수증.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// 주문내역 정보 불러오기
+function loadOrderInfo() {
+    // 주문내역 결과가 있는지 확인
+    const orderResult = document.getElementById('order-result-content');
+    if (!orderResult || !orderResult.value) {
+        alert('먼저 주문내역을 변환해주세요.');
+        return;
+    }
+    
+    // 서버에 주문내역 정보 추출 요청
+    fetch('/naverpay/extract-order-info', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            html_content: orderResult.value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('product').value = data.product || '';
+            document.getElementById('approval_amount').value = data.approval_amount || '';
+            document.getElementById('total').value = data.total || '';
+            autoCalculate();
+            alert('주문내역에서 정보를 불러왔습니다.');
+        } else {
+            alert('정보를 불러오는데 실패했습니다: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('정보를 불러오는데 실패했습니다.');
+    });
+}
+
+// 자동계산 기능
+function autoCalculate() {
+    const approval = document.getElementById('approval_amount').value.replace(/,/g, '');
+    if (!approval) return;
+    
+    // 공급가액 계산 (승인금액 / 1.1)
+    const supplyAmount = Math.round(parseInt(approval) / 1.1);
+    document.getElementById('supply_amount').value = supplyAmount.toLocaleString();
+    
+    // 부가세액 계산 (승인금액 - 공급가액)
+    const taxAmount = parseInt(approval) - supplyAmount;
+    document.getElementById('tax_amount').value = taxAmount.toLocaleString();
+    
+    // 봉사료는 0으로 설정
+    document.getElementById('service_fee').value = '0';
+    
+    // 합계는 승인금액과 동일
+    document.getElementById('total').value = parseInt(approval).toLocaleString();
+}
+
+// 옵션별 입력 필드 동적 생성 (기존 값 유지)
+function generateOptionFields(optionCount, optionInputs = []) {
+    const container = document.getElementById('option-inputs');
+    container.innerHTML = '';
+    
+    // 최대 5개로 제한
+    const maxOptions = Math.min(optionCount, 5);
+    
+    for (let i = 0; i < maxOptions; i++) {
+        const optionData = optionInputs[i] || {};
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'card mb-3';
+        optionDiv.innerHTML = `
+            <div class="card-header">
+                <h6 class="mb-0">옵션 ${i + 1}</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="option_${i}_상품명" class="form-label">상품명</label>
+                            <input type="text" class="form-control" id="option_${i}_상품명" name="option_${i}_상품명" value="${optionData['상품명'] || ''}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="option_${i}_옵션명" class="form-label">옵션명</label>
+                            <input type="text" class="form-control" id="option_${i}_옵션명" name="option_${i}_옵션명" value="${optionData['옵션명'] || ''}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="option_${i}_수량(숫자만)" class="form-label">수량(숫자만)</label>
+                            <input type="text" class="form-control" id="option_${i}_수량(숫자만)" name="option_${i}_수량(숫자만)" value="${optionData['수량'] || ''}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="option_${i}_상품가격(숫자만)" class="form-label">상품가격(숫자만)</label>
+                            <input type="text" class="form-control" id="option_${i}_상품가격(숫자만)" name="option_${i}_상품가격(숫자만)" value="${optionData['상품가격'] || ''}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="option_${i}_상품이미지" class="form-label">상품이미지</label>
+                            <input type="text" class="form-control" id="option_${i}_상품이미지" name="option_${i}_상품이미지" value="${optionData['상품이미지'] || ''}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="option_${i}_상품 할인 전 금액(숫자만, 0입력시 미출력)" class="form-label">상품 할인 전 금액(숫자만, 0입력시 미출력)</label>
+                            <input type="text" class="form-control" id="option_${i}_상품 할인 전 금액(숫자만, 0입력시 미출력)" name="option_${i}_상품 할인 전 금액(숫자만, 0입력시 미출력)" value="${optionData['상품 할인 전 금액'] || '0'}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(optionDiv);
+    }
+}
+
+// 네이버페이 변환 로딩 표시 함수
+function showOrderLoading() {
+    document.getElementById('orderLoading').style.display = 'block';
+    document.getElementById('convert-btn').disabled = true;
+}
+
+function showCardLoading() {
+    document.getElementById('cardLoading').style.display = 'block';
+    document.getElementById('cardSubmitBtn').disabled = true;
+}
+
+// 로딩 숨기기 함수
+function hideOrderLoading() {
+    document.getElementById('orderLoading').style.display = 'none';
+    document.getElementById('convert-btn').disabled = false;
+}
+
+function hideCardLoading() {
+    document.getElementById('cardLoading').style.display = 'none';
+    document.getElementById('cardSubmitBtn').disabled = false;
+}
+
+// 미리보기 버튼 클릭 이벤트
+document.addEventListener('DOMContentLoaded', function() {
+    // 디버깅: 페이지 로드 시 데이터 확인
+    console.log("=== 네이버페이 페이지 로드 디버깅 ===");
+    
+    const previewBtn = document.getElementById('preview-btn');
+    const convertBtn = document.getElementById('convert-btn');
+    const optionFields = document.getElementById('option-fields');
+    const optionCountSelect = document.getElementById('option_count');
+    
+    // 페이지 로드 시 기존 입력값들이 있다면 자동으로 표시
+    const htmlContent = document.getElementById('html_content').value;
+    const optionCount = parseInt(optionCountSelect.value);
+    
+    console.log(`HTML 내용 길이: ${htmlContent ? htmlContent.length : 0}자`);
+    console.log(`옵션 개수: ${optionCount}`);
+    
+    if (htmlContent && optionCount > 0) {
+        // 옵션별 입력 필드 생성 (기존 값 유지)
+        const optionInputs = {{ option_inputs | tojson if option_inputs else '[]' }};
+        console.log(`옵션 입력 데이터:`, optionInputs);
+        
+        generateOptionFields(optionCount, optionInputs);
+        
+        // 입력 필드 섹션 표시
+        optionFields.style.display = 'block';
+        
+        // 버튼 변경
+        if (previewBtn) previewBtn.style.display = 'none';
+        if (convertBtn) convertBtn.style.display = 'inline-block';
+        
+        console.log("기존 입력값으로 필드 자동 생성 완료");
+    } else {
+        console.log("기존 입력값이 없어서 기본 상태로 시작");
+    }
+    
+    if (previewBtn) {
+        previewBtn.addEventListener('click', function() {
+            const htmlContent = document.getElementById('html_content').value;
+            const optionCount = parseInt(optionCountSelect.value);
+            
+            if (!htmlContent) {
+                alert('HTML 내용을 입력해주세요.');
+                return;
+            }
+            
+            // 옵션별 입력 필드 생성
+            generateOptionFields(optionCount);
+            
+            // 입력 필드 섹션 표시
+            optionFields.style.display = 'block';
+            
+            // 버튼 변경
+            previewBtn.style.display = 'none';
+            convertBtn.style.display = 'inline-block';
+            
+            // 폼 액션 변경
+            const form = previewBtn.closest('form');
+            form.action = '/naverpay/convert';
+            
+            // 스크롤을 입력 필드로 이동
+            optionFields.scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+    
+    // 주문내역 변환 폼 제출 시 로딩 표시
+    const orderForm = document.querySelector('form[action="/naverpay/convert"]');
+    if (orderForm) {
+        orderForm.addEventListener('submit', function() {
+            showOrderLoading();
+        });
+    }
+    
+    // 카드영수증 폼 제출 시 로딩 표시 및 주문내역 데이터 추가
+    const cardForm = document.querySelector('form[action="/naverpay/card"]');
+    if (cardForm) {
+        cardForm.addEventListener('submit', function(e) {
+            showCardLoading();
+            // 디버깅: 카드영수증 폼 제출 시 데이터 수집
+            console.log("=== 카드영수증 폼 제출 디버깅 ===");
+            
+            // 기존 숨겨진 필드들 제거 (중복 방지)
+            const existingHiddenFields = cardForm.querySelectorAll('input[type="hidden"][name^="option_"], input[type="hidden"][name="스토어명"], input[type="hidden"][name="배송비"], input[type="hidden"][name="수령자명"], input[type="hidden"][name="연락처"], input[type="hidden"][name="주소"], input[type="hidden"][name="주문금액(총결제금액, 숫자만)"], input[type="hidden"][name="상품금액(숫자만)"], input[type="hidden"][name="쿠폰할인(숫자만, 0입력시 div삭제)"], input[type="hidden"][name="결제배송비(숫자만)"], input[type="hidden"][name="카드결제금액(숫자만)"]');
+            existingHiddenFields.forEach(field => field.remove());
+            
+            // 주문내역 데이터 수집
+            const htmlContent = document.getElementById('html_content').value;
+            const optionCount = parseInt(document.getElementById('option_count').value);
+            
+            console.log(`수집된 HTML 내용 길이: ${htmlContent ? htmlContent.length : 0}자`);
+            console.log(`수집된 옵션 개수: ${optionCount}`);
+            
+            // 기본 필드들 업데이트
+            cardForm.querySelector('input[name="html_content"]').value = htmlContent;
+            cardForm.querySelector('input[name="option_count"]').value = optionCount;
+            
+            // 옵션별 입력 필드들 추가 (실제 사용자 입력값 수집)
+            console.log(`옵션별 입력 필드 수집 시작 (옵션 개수: ${optionCount})`);
+            for (let i = 0; i < parseInt(optionCount); i++) {
+                // DOM에서 실제 입력값 수집
+                const 상품명 = document.getElementById(`option_${i}_상품명`)?.value || '';
+                const 옵션명 = document.getElementById(`option_${i}_옵션명`)?.value || '';
+                const 수량 = document.getElementById(`option_${i}_수량(숫자만)`)?.value || '';
+                const 상품가격 = document.getElementById(`option_${i}_상품가격(숫자만)`)?.value || '';
+                const 상품이미지 = document.getElementById(`option_${i}_상품이미지`)?.value || '';
+                const 할인전금액 = document.getElementById(`option_${i}_상품 할인 전 금액(숫자만, 0입력시 미출력)`)?.value || '';
+                
+                console.log(`옵션 ${i+1}: 상품명=${상품명}, 옵션명=${옵션명}, 수량=${수량}, 가격=${상품가격}`);
+                
+                addHiddenField(cardForm, `option_${i}_상품명`, 상품명);
+                addHiddenField(cardForm, `option_${i}_옵션명`, 옵션명);
+                addHiddenField(cardForm, `option_${i}_수량(숫자만)`, 수량);
+                addHiddenField(cardForm, `option_${i}_상품가격(숫자만)`, 상품가격);
+                addHiddenField(cardForm, `option_${i}_상품이미지`, 상품이미지);
+                addHiddenField(cardForm, `option_${i}_상품 할인 전 금액(숫자만, 0입력시 미출력)`, 할인전금액);
+            }
+            
+            // 기타 항목들 추가
+            const 기타필드 = [
+                "스토어명", "배송비", "수령자명", "연락처", "주소",
+                "주문금액(총결제금액, 숫자만)", "상품금액(숫자만)", 
+                "쿠폰할인(숫자만, 0입력시 div삭제)", "결제배송비(숫자만)", "카드결제금액(숫자만)"
+            ];
+            
+            console.log("기타 항목 수집 시작");
+            기타필드.forEach(field => {
+                const element = document.getElementById(field);
+                if (element) {
+                    console.log(`${field}: ${element.value}`);
+                    addHiddenField(cardForm, field, element.value);
+                } else {
+                    console.log(`${field}: 요소를 찾을 수 없음`);
+                }
+            });
+            
+            console.log("카드영수증 폼 제출 데이터 수집 완료");
+        });
+    }
+    
+    // 페이지 로드 시 로딩 숨기기 (폼 제출 후 페이지 새로고침 시)
+    hideOrderLoading();
+    hideCardLoading();
+});
+
+// 숨겨진 필드 추가 함수
+function addHiddenField(form, name, value) {
+    const hiddenField = document.createElement('input');
+    hiddenField.type = 'hidden';
+    hiddenField.name = name;
+    hiddenField.value = value;
+    form.appendChild(hiddenField);
+}
+</script>
+{% endblock %}

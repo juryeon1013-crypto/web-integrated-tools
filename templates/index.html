@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}홈 - 웹 기반 통합 주문 도구{% endblock %}
+
+
+{% block content %}
+<!-- 히어로 섹션 -->
+<section class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-4">
+            <i class="fas fa-tools me-3"></i>웹 기반 통합 주문 도구
+        </h1>
+        <p class="lead mb-4">기존 3개의 데스크톱 프로그램을 웹에서 편리하게 사용하세요</p>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <p class="mb-0">도매꾹 HTML 변환기, 하우저 변환기, 네이버페이 옵션 블록 변환기를 하나의 플랫폼에서!</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 도구 카드 섹션 -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">사용 가능한 도구들</h2>
+        <div class="row g-4">
+            <!-- 도매꾹 변환기 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card tool-card h-100 text-center">
+                    <div class="card-body">
+                        <div class="card-icon text-primary">
+                            <i class="fas fa-file-code"></i>
+                        </div>
+                        <h5 class="card-title">도매꾹 HTML 변환기</h5>
+                        <p class="card-text">도매꾹 주문내역 HTML을 수정하고 변환합니다.</p>
+                        <a href="/domeggook" class="btn btn-primary">
+                            <i class="fas fa-arrow-right me-2"></i>사용하기
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하우저 변환기 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card tool-card h-100 text-center">
+                    <div class="card-body">
+                        <div class="card-icon text-success">
+                            <i class="fas fa-table"></i>
+                        </div>
+                        <h5 class="card-title">하우저 변환기</h5>
+                        <p class="card-text">엑셀 파일을 하우저 양식에 맞게 변환합니다.</p>
+                        <a href="/hauser" class="btn btn-success">
+                            <i class="fas fa-arrow-right me-2"></i>사용하기
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 네이버페이 변환기 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card tool-card h-100 text-center">
+                    <div class="card-body">
+                        <div class="card-icon text-warning">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h5 class="card-title">네이버페이 변환기</h5>
+                        <p class="card-text">네이버페이 옵션과 카드영수증을 변환합니다.</p>
+                        <a href="/naverpay" class="btn btn-warning text-white">
+                            <i class="fas fa-arrow-right me-2"></i>사용하기
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- 변환 히스토리 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card tool-card h-100 text-center">
+                    <div class="card-body">
+                        <div class="card-icon text-secondary">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <h5 class="card-title">변환 히스토리</h5>
+                        <p class="card-text">이전 변환 작업 내역을 확인합니다.<br><br></p>
+                        <a href="/history" class="btn btn-secondary">
+                            <i class="fas fa-arrow-right me-2"></i>확인하기
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</section>
+
+<!-- 특징 섹션 -->
+<section class="bg-light py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">주요 특징</h2>
+        <div class="row g-4">
+            <div class="col-md-4 text-center">
+                <i class="fas fa-globe fa-3x text-primary mb-3"></i>
+                <h5>웹 기반</h5>
+                <p>브라우저에서 언제든지 접근 가능</p>
+            </div>
+            <div class="col-md-4 text-center">
+                <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                <h5>보안</h5>
+                <p>파일 크기 제한 및 확장자 검증</p>
+            </div>
+            <div class="col-md-4 text-center">
+                <i class="fas fa-history fa-3x text-info mb-3"></i>
+                <h5>히스토리</h5>
+                <p>작업 내역 저장 및 관리</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+
+
+
