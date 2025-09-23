@@ -124,7 +124,7 @@ class NaverpayConverter:
         result = final_html
         
         # 스토어명, 배송비 치환
-        result = re.sub(r'(<strong class="ProductStore_title__iJmfU"><span class="blind">판매자명</span>)[^<]+', r'\g<1>' + 기타항목["스토어명"], result)
+        result = re.sub(r'(<strong class="ProductStore_title__iJmfU"><span class="blind">판매자명</span>)[^<]+', f'\g<1>{기타항목["스토어명"]}', result)
         result = re.sub(r'(<div class="ProductStore_delivery__BivAy">)[^<]+', f'\g<1>{기타항목["배송비"]}', result)
         
         # 옵션별 상품 정보 치환
