@@ -1010,20 +1010,5 @@ def view_log_file(filename):
 
 
 if __name__ == '__main__':
-    # 필요한 폴더 생성
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['LOG_FOLDER'], exist_ok=True)
-    
-    # 데이터베이스 초기화
-    init_db()
-    
-    # 환경변수 HOST/PORT로 오버라이드 가능 (기본: 127.0.0.1:5000)
-    run_host = os.environ.get('HOST', '127.0.0.1')
-    try:
-        run_port = int(os.environ.get('PORT', '5000'))
-    except ValueError:
-        run_port = 5000
-
-    # 디버그 모드 활성화 (오류 확인용)
-    app.run(debug=True, host=run_host, port=run_port, use_reloader=False, threaded=True)
+    # 로컬 개발에서만 쓰임. Render에서는 Start Command가 gunicorn이므로 실행되지 않음.
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)

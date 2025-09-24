@@ -124,8 +124,8 @@ class NaverpayConverter:
         result = final_html
         
         # 스토어명, 배송비 치환
-        result = re.sub(r'(<strong class="ProductStore_title__iJmfU"><span class="blind">판매자명</span>)[^<]+', f'\g<1>{기타항목["스토어명"]}', result)
-        result = re.sub(r'(<div class="ProductStore_delivery__BivAy">)[^<]+', f'\g<1>{기타항목["배송비"]}', result)
+        result = re.sub(r'(<strong class="ProductStore_title__iJmfU"><span class="blind">판매자명</span>)[^<]+', f'\\g<1>{기타항목["스토어명"]}', result)
+        result = re.sub(r'(<div class="ProductStore_delivery__BivAy">)[^<]+', f'\\g<1>{기타항목["배송비"]}', result)
         
         # 옵션별 상품 정보 치환
         soup2 = BeautifulSoup(result, "html.parser")
@@ -184,9 +184,9 @@ class NaverpayConverter:
         result = str(soup2)
         
         # 배송지 정보 치환
-        result = re.sub(r'(<strong class="DeliveryContent_name__fyClB"><span class="blind">배송지명</span>)[^<]+', f'\g<1>{기타항목["수령자명"]}({기타항목["수령자명"]})', result)
-        result = re.sub(r'(<span class="DeliveryContent_phone__f0k\+a"><span class="blind">연락처</span>)[^<]+', f'\g<1>{기타항목["연락처"]}', result)
-        result = re.sub(r'(<div class="DeliveryContent_area-address__XsMLS"><span class="blind">주소</span>)[^<]+', f'\g<1>{기타항목["주소"]}', result)
+        result = re.sub(r'(<strong class="DeliveryContent_name__fyClB"><span class="blind">배송지명</span>)[^<]+', f'\\g<1>{기타항목["수령자명"]}({기타항목["수령자명"]})', result)
+        result = re.sub(r'(<span class="DeliveryContent_phone__f0k\+a"><span class="blind">연락처</span>)[^<]+', f'\\g<1>{기타항목["연락처"]}', result)
+        result = re.sub(r'(<div class="DeliveryContent_area-address__XsMLS"><span class="blind">주소</span>)[^<]+', f'\\g<1>{기타항목["주소"]}', result)
         
         # 금액 정보 치환
         result = re.sub(r'(<dd class="Summary_area-value__BcN0d">총 )[\d,]+', r'\g<1>' + f'{int(기타항목["주문금액(총결제금액, 숫자만)"]):,}', result)
