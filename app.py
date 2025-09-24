@@ -22,6 +22,10 @@ from modules.naverpay_converter import NaverpayConverter  # 네이버페이 변�
 app = Flask(__name__)
 app.secret_key = 'dev-secret-key-change-in-production'
 
+# 필요한 폴더 생성 (앱 시작 시 항상 실행)
+os.makedirs('uploads', exist_ok=True)
+os.makedirs('downloads', exist_ok=True)
+
 # 로깅 설정
 def setup_logging():
     """로깅 시스템 설정"""
@@ -1010,5 +1014,8 @@ def view_log_file(filename):
 
 
 if __name__ == '__main__':
+    # 데이터베이스 초기화
+    init_db()
+    
     # 로컬 개발에서만 쓰임. Render에서는 Start Command가 gunicorn이므로 실행되지 않음.
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
