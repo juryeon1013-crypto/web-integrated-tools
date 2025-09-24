@@ -654,7 +654,15 @@ function downloadCardReceipt() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'domeggook_card_receipt.txt';
+    // 동적 파일명 생성 (날짜_상품명_카드영수증.txt)
+    const today = new Date();
+    const dateStr = today.getFullYear().toString().slice(-2) + 
+                   String(today.getMonth() + 1).padStart(2, '0') + 
+                   String(today.getDate()).padStart(2, '0');
+    // 상품명은 폼에서 가져오거나 기본값 사용
+    const productInput = document.getElementById('product_title');
+    const productName = productInput ? productInput.value : '아르코에어';
+    a.download = `${dateStr}_${productName}_카드영수증.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
