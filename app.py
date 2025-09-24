@@ -210,23 +210,22 @@ def handle_card_receipt_generation():
                 # downloads 폴더가 없으면 생성
                 os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
                 
-                # 파일명 생성
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                order_number = order_data.get('order_number', '0202')
+                # 파일명 생성 (네이버페이와 동일한 형식)
+                today = datetime.now().strftime('%y%m%d')
                 product_title = order_data.get('product_title', '아르코에어')
                 
-                # 파일명에 사용할 수 없는 문자 제거
-                safe_product_title = "".join(c for c in product_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-                safe_product_title = safe_product_title.replace(' ', '_')
+                # 파일명 형식: 날짜_상품명_카드영수증.txt
+                filename = f"{today}_{product_title}_카드영수증.txt"
+                # 파일명 안전성 검사
+                safe_filename = domeggook_converter.sanitize_filename(filename) if hasattr(domeggook_converter, 'sanitize_filename') else filename
                 
-                filename = f'domeggook_card_{order_number}_{safe_product_title}_{timestamp}.txt'
-                filepath = os.path.join(app.config['DOWNLOAD_FOLDER'], filename)
+                filepath = os.path.join(app.config['DOWNLOAD_FOLDER'], safe_filename)
                 
                 # 파일 저장
                 with open(filepath, 'w', encoding='utf-8') as f:
                     f.write(card_receipt)
                 
-                saved_filename = filename
+                saved_filename = safe_filename
                 print(f"카드영수증 파일 저장 완료: {filepath}")
                 
             except Exception as save_error:
@@ -306,23 +305,22 @@ def domeggook():
                     # downloads 폴더가 없으면 생성 (파일 저장 오류 방지)
                     os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
                     
-                    # 파일명 생성 (더 의미있는 이름)
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    order_number = order_data.get('order_number', '0202')
+                    # 파일명 생성 (네이버페이와 동일한 형식)
+                    today = datetime.now().strftime('%y%m%d')
                     product_title = order_data.get('product_title', '아르코에어')
                     
-                    # 파일명에 사용할 수 없는 문자 제거
-                    safe_product_title = "".join(c for c in product_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-                    safe_product_title = safe_product_title.replace(' ', '_')
+                    # 파일명 형식: 날짜_상품명_주문내역.txt
+                    filename = f"{today}_{product_title}_주문내역.txt"
+                    # 파일명 안전성 검사
+                    safe_filename = domeggook_converter.sanitize_filename(filename) if hasattr(domeggook_converter, 'sanitize_filename') else filename
                     
-                    filename = f'domeggook_{order_number}_{safe_product_title}_{timestamp}.txt'
-                    filepath = os.path.join(app.config['DOWNLOAD_FOLDER'], filename)
+                    filepath = os.path.join(app.config['DOWNLOAD_FOLDER'], safe_filename)
                     
                     # 파일 저장
                     with open(filepath, 'w', encoding='utf-8') as f:
                         f.write(result)
                     
-                    saved_filename = filename
+                    saved_filename = safe_filename
                     print(f"파일 저장 완료: {filepath}")  # 서버 로그에 저장 확인
                     
                 except Exception as save_error:
