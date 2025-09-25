@@ -30,12 +30,12 @@
     <ul class="nav nav-tabs" id="domeggookTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="order-tab" data-bs-toggle="tab" data-bs-target="#order-pane" type="button" role="tab">
-                <i class="fas fa-edit me-2"></i>주문내역 수정
+                <i class="fas fa-edit me-2"></i>주문내역
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="card-tab" data-bs-toggle="tab" data-bs-target="#card-pane" type="button" role="tab">
-                <i class="fas fa-credit-card me-2"></i>카드영수증 생성
+                <i class="fas fa-credit-card me-2"></i>카드영수증
             </button>
         </li>
     </ul>
@@ -46,7 +46,7 @@
         <div class="tab-pane fade show active" id="order-pane" role="tabpanel" aria-labelledby="order-tab">
             <div class="card shadow-lg">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-edit me-2"></i>주문내역 수정</h5>
+                    <h5 class="mb-0"><i class="fas fa-edit me-2"></i>주문내역</h5>
                 </div>
                 <div class="card-body">
                     <form method="POST" class="mb-4">
@@ -181,7 +181,7 @@
                     <button type="button" class="btn btn-outline-secondary btn-lg me-3" onclick="loadSavedInputs()">
                         <i class="fas fa-upload me-2"></i>불러오기
                     </button>
-                    <button type="submit" class="btn btn-primary btn-lg" id="orderSubmitBtn">주문내역 수정</button>
+                    <button type="submit" class="btn btn-primary btn-lg" id="orderSubmitBtn">주문내역 변환하기</button>
                     <div id="orderLoading" class="mt-2" style="display: none;">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">변환 중...</span>
@@ -219,7 +219,7 @@
         <div class="tab-pane fade" id="card-pane" role="tabpanel" aria-labelledby="card-tab">
             <div class="card shadow-lg">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>카드영수증 생성</h5>
+                    <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>카드영수증</h5>
                 </div>
                 <div class="card-body">
                     <div class="card">
@@ -292,7 +292,7 @@
                                 </div>
                             </div>
                             <div class="text-center mt-3">
-                                <button type="button" class="btn btn-primary" id="cardSubmitBtn" onclick="showCardLoading()">카드영수증 생성</button>
+                                <button type="button" class="btn btn-primary btn-lg" id="cardSubmitBtn" onclick="showCardLoading()">카드영수증 변환하기</button>
                                 <div id="cardLoading" class="mt-2" style="display: none;">
                                     <div class="spinner-border text-primary" role="status">
                                         <span class="visually-hidden">변환 중...</span>
@@ -804,6 +804,46 @@ function downloadCardReceipt() {
     window.URL.revokeObjectURL(url);
 }
 </script>
+        </div>
+    </div>
+</div>
+
+<!-- 사용방법 안내 -->
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>도매꾹 변환기 사용 방법</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-primary">📋 기본 사용 순서</h6>
+                            <ol class="list-group list-group-numbered">
+                                <li class="list-group-item">옵션 개수 설정 → 각 항목에 수정값 입력</li>
+                                <li class="list-group-item">주문내역 변환하기 버튼 클릭</li>
+                                <li class="list-group-item">카드영수증 생성 버튼 클릭</li>
+                                <li class="list-group-item">자동 생성된 값 외 빈 항목 입력</li>
+                                <li class="list-group-item">카드영수증 변환하기 버튼 클릭</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-success">💾 불러오기 사용 방법</h6>
+                            <ol class="list-group list-group-numbered">
+                                <li class="list-group-item">불러오기 버튼 클릭 → 불러올 건 선택</li>
+                                <li class="list-group-item">나머지는 기본 사용 순서와 동일</li>
+                                <li class="list-group-item">
+                                    ⚠️ <strong>중요</strong>: 불러오기 후에는 <strong>카드영수증 생성도 함께 실행</strong>해야 함
+                                    <div class="alert alert-warning mt-1 mb-0 py-1" role="alert">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i> 주문내역 수정을 다시 하면 시간 등 자동생성 값이 변동됩니다.</small>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

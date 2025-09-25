@@ -102,13 +102,33 @@
 
             <!-- 사용법 안내 -->
             <div class="card shadow-lg mt-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>사용법 안내</h5>
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>하우저 변환기 사용 방법</h5>
                 </div>
                 <div class="card-body">
+                    <!-- 기본 사용 방법 -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="fw-bold text-primary">🚀 기본 사용 방법</h6>
+                            <ol class="list-group list-group-numbered">
+                                <li class="list-group-item">파일 선택 → 변환할 엑셀 파일 업로드</li>
+                                <li class="list-group-item">변환하기 버튼 클릭</li>
+                                <li class="list-group-item">변환된 파일 다운로드</li>
+                                <li class="list-group-item">K~L열 제외하고 하우저 택배의뢰등록양식에 붙여넣기</li>
+                                <li class="list-group-item">
+                                    하우저 택배일괄등록에서 택배의뢰등록양식 파일 업로드
+                                    <div class="alert alert-warning mt-1 mb-0 py-1 d-inline-block" role="alert">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i> 등록 실패한 건이 있는지 반드시 확인하고 재등록하세요.</small>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <!-- 변환 과정과 변환 조건 -->
                     <div class="row">
                         <div class="col-md-6">
-                            <h6 class="fw-bold text-primary">📋 변환 과정</h6>
+                            <h6 class="fw-bold text-info">📋 변환 과정</h6>
                             <ol class="list-group list-group-numbered">
                                 <li class="list-group-item">K열의 상품명을 읽어옵니다</li>
                                 <li class="list-group-item">줄바꿈 기준으로 상품명을 분리합니다</li>

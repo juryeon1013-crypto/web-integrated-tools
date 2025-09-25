@@ -3,6 +3,7 @@ from flask_session import Session
 from werkzeug.exceptions import RequestEntityTooLarge
 import os
 from datetime import datetime
+import pytz
 import sqlite3
 from werkzeug.utils import secure_filename
 import logging
@@ -498,7 +499,7 @@ def hauser():
             
             if result.get('success'):
                 # 변환된 파일을 downloads 폴더로 복사
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                timestamp = datetime.now(pytz.timezone('Asia/Seoul')).strftime('%Y%m%d_%H%M%S')
                 result_filename = f'howser_result_{timestamp}.xlsx'
                 result_filepath = os.path.join(app.config['DOWNLOAD_FOLDER'], result_filename)
                 

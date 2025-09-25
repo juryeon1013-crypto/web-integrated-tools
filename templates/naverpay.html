@@ -99,7 +99,7 @@
                                                 <input type="text" class="form-control" id="스토어명" name="스토어명" value="{{ 기타항목.스토어명 if 기타항목 else '' }}">
                                             </div>
                                             <div class="mb-3">
-                                                <label for="배송비" class="form-label">배송비(배송비 없을 경우 '무료 배송' 입력)</label>
+                                                <label for="배송비" class="form-label">배송비(있으면 '배송비+금액(원)' 형식으로 입력 (ex:배송비 2,500원) / 없으면 '무료 배송' 입력)</label>
                                                 <input type="text" class="form-control" id="배송비" name="배송비" value="{{ 기타항목.배송비 if 기타항목 else '' }}">
                                             </div>
                                             <div class="mb-3">
@@ -317,27 +317,29 @@
             <!-- 사용법 안내 -->
             <div class="card shadow-lg mt-4">
                 <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>사용법 안내</h5>
+                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>네이버페이 변환기 사용 방법</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <h6 class="fw-bold text-primary">🔄 주문내역 변환 과정</h6>
+                            <h6 class="fw-bold text-primary">🚀 기본 사용 방법</h6>
                             <ol class="list-group list-group-numbered">
-                                <li class="list-group-item">HTML 입력 → 옵션 개수 선택</li>
-                                <li class="list-group-item">샘플코드로 교체 → 구매확정일 수정</li>
-                                <li class="list-group-item">옵션별 상품 정보 입력</li>
-                                <li class="list-group-item">기타 항목들 입력 후 변환</li>
+                                <li class="list-group-item">HTML 입력 → 네이버페이 주문내역 HTML(body 태그 전체) 붙여넣기</li>
+                                <li class="list-group-item">옵션 개수 선택 → 각 항목에 값 입력</li>
+                                <li class="list-group-item">주문내역 변환하기 버튼 클릭</li>
+                                <li class="list-group-item">카드영수증 탭 이동</li>
+                                <li class="list-group-item">카드영수증 HTML(body 태그 전체) 붙여넣기</li>
+                                <li class="list-group-item">주문내역에서 정보 불러오기 클릭 → 빈 항목에 값 입력</li>
+                                <li class="list-group-item">카드영수증 변환하기 클릭</li>
                             </ol>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="fw-bold text-success">💳 카드영수증 변환 과정</h6>
-                            <ol class="list-group list-group-numbered">
-                                <li class="list-group-item">카드영수증 HTML 입력</li>
-                                <li class="list-group-item">주문내역에서 정보 자동 불러오기</li>
-                                <li class="list-group-item">필요한 정보 입력 후 자동계산</li>
-                                <li class="list-group-item">카드영수증 변환 완료</li>
-                            </ol>
+                            <h6 class="fw-bold text-success">💾 불러오기 사용 방법</h6>
+                            <ul class="list-group">
+                                <li class="list-group-item">1. 네이버페이 주문내역 HTML 입력 → 불러오기 버튼 클릭</li>
+                                <li class="list-group-item">2. 자동입력된 값에서 수정할 부분 있으면 수정 → 주문내역 변환하기 버튼 클릭</li>
+                                <li class="list-group-item">* 카드영수증: 자동입력 항목(상품명/가격)에 변동이 없으면 별도 변환 불필요</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
