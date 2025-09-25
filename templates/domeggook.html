@@ -178,6 +178,9 @@
         
         
                 <div class="text-center mt-4">
+                    <button type="button" class="btn btn-outline-secondary btn-lg me-3" onclick="loadSavedInputs()">
+                        <i class="fas fa-upload me-2"></i>불러오기
+                    </button>
                     <button type="submit" class="btn btn-primary btn-lg" id="orderSubmitBtn">주문내역 수정</button>
                     <div id="orderLoading" class="mt-2" style="display: none;">
                         <div class="spinner-border text-primary" role="status">
@@ -645,6 +648,138 @@ function copyCardReceipt() {
     navigator.clipboard.writeText(cardReceipt).then(function() {
         alert('카드영수증이 클립보드에 복사되었습니다!');
     });
+}
+
+// 저장된 입력값 불러오기 함수
+function loadSavedInputs() {
+    fetch('/api/get-saved-inputs/domeggook')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.inputs.length > 0) {
+                showSavedInputsModal(data.inputs);
+            } else {
+                alert('저장된 입력값이 없습니다.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('저장된 입력값을 불러오는 중 오류가 발생했습니다.');
+        });
+}
+
+// 저장된 입력값 목록 모달 표시
+function showSavedInputsModal(inputs) {
+    // 모달 HTML 생성
+    let modalHtml = `
+        <div class="modal fade" id="savedInputsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">저장된 입력값 불러오기</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted">불러올 입력값을 선택하세요:</p>
+                        <div class="list-group">`;
+    
+    inputs.forEach((input, index) => {
+        const date = new Date(input.created_at).toLocaleString('ko-KR');
+        const productTitle = input.input_data.product_title || '상품명 없음';
+        modalHtml += `
+                            <button type="button" class="list-group-item list-group-item-action" onclick="loadSpecificInput(${input.id})">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">${productTitle}</h6>
+                                    <small>${date}</small>
+                                </div>
+                                <p class="mb-1 text-muted">주문번호: ${input.input_data.order_number || '없음'}</p>
+                            </button>`;
+    });
+    
+    modalHtml += `
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    
+    // 기존 모달 제거
+    const existingModal = document.getElementById('savedInputsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 새 모달 추가
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // 모달 표시
+    const modal = new bootstrap.Modal(document.getElementById('savedInputsModal'));
+    modal.show();
+}
+
+// 특정 입력값 불러오기
+function loadSpecificInput(inputId) {
+    fetch(`/api/load-input/${inputId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                fillFormWithData(data.input_data);
+                // 모달 닫기
+                const modal = bootstrap.Modal.getInstance(document.getElementById('savedInputsModal'));
+                modal.hide();
+                alert('입력값이 성공적으로 불러와졌습니다!');
+            } else {
+                alert('입력값을 불러오는 중 오류가 발생했습니다.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('입력값을 불러오는 중 오류가 발생했습니다.');
+        });
+}
+
+// 폼에 데이터 채우기
+function fillFormWithData(data) {
+    // 기본 주문 정보 필드들
+    if (data.product_title) document.getElementById('product_title').value = data.product_title;
+    if (data.order_number) document.getElementById('order_number').value = data.order_number;
+    if (data.order_date) document.getElementById('order_date').value = data.order_date;
+    if (data.supplier_name) document.getElementById('supplier_name').value = data.supplier_name;
+    if (data.supplier_email) document.getElementById('supplier_email').value = data.supplier_email;
+    if (data.supplier_phone) document.getElementById('supplier_phone').value = data.supplier_phone;
+    if (data.quantity) document.getElementById('quantity').value = data.quantity;
+    if (data.payment_amount) document.getElementById('payment_amount').value = data.payment_amount;
+    
+    // 수령자 정보 필드들
+    if (data.recipient_name) document.getElementById('recipient_name').value = data.recipient_name;
+    if (data.phone) document.getElementById('phone').value = data.phone;
+    if (data.address) document.getElementById('address').value = data.address;
+    
+    // 옵션 개수 먼저 설정 (동적으로 옵션 필드 생성)
+    if (data.option_count) {
+        const optionCountSelect = document.getElementById('option_count');
+        if (optionCountSelect) {
+            optionCountSelect.value = data.option_count;
+            // 옵션 개수 변경 이벤트 트리거하여 동적으로 필드 생성
+            optionCountSelect.dispatchEvent(new Event('change'));
+            
+            // 필드 생성 완료 후 값 채우기 (약간의 지연 후)
+            setTimeout(() => {
+                // 옵션 필드들 (name 속성으로 찾기)
+                for (let i = 1; i <= 5; i++) {
+                    const nameField = document.querySelector(`input[name="option_${i}_name"]`);
+                    const quantityField = document.querySelector(`input[name="option_${i}_quantity"]`);
+                    const priceField = document.querySelector(`input[name="option_${i}_price"]`);
+                    
+                    if (nameField && data[`option_${i}_name`]) nameField.value = data[`option_${i}_name`];
+                    if (quantityField && data[`option_${i}_quantity`]) quantityField.value = data[`option_${i}_quantity`];
+                    if (priceField && data[`option_${i}_price`]) priceField.value = data[`option_${i}_price`];
+                }
+            }, 100); // 100ms 지연 후 실행
+        }
+    }
 }
 
 // 카드영수증 다운로드 함수

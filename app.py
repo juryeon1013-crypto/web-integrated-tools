@@ -127,8 +127,109 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+    # 입력값 저장 테이블 추가
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS saved_inputs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tool_type TEXT NOT NULL,
+            input_data TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
     conn.commit()
     conn.close()
+
+# 입력값 저장 함수
+def save_input_data(tool_type, input_data):
+    """입력값을 데이터베이스에 저장 (24시간 보관)"""
+    try:
+        print(f"[저장] 시작: {tool_type}, 상품명: {input_data.get('product_title', 'Unknown')}")
+        conn = sqlite3.connect(app.config['DATABASE'])
+        cursor = conn.cursor()
+        
+        # 입력 데이터를 JSON으로 저장
+        import json
+        json_data = json.dumps(input_data, ensure_ascii=False)
+        
+        # 한국시간으로 명시적으로 저장
+        korean_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        cursor.execute('''
+            INSERT INTO saved_inputs (tool_type, input_data, created_at)
+            VALUES (?, ?, ?)
+        ''', (tool_type, json_data, korean_time))
+        
+        conn.commit()
+        conn.close()
+        
+        print(f"[저장] 완료: {tool_type}")
+        
+        # 24시간 이상 된 데이터 삭제
+        cleanup_old_inputs()
+        
+        return True
+    except Exception as e:
+        print(f"[저장] 오류: {str(e)}")
+        return False
+
+# 입력값 불러오기 함수
+def get_saved_inputs(tool_type):
+    """저장된 입력값들을 불러오기 (당일만)"""
+    try:
+        conn = sqlite3.connect(app.config['DATABASE'])
+        cursor = conn.cursor()
+        
+        # 당일 데이터만 조회
+        cursor.execute('''
+            SELECT id, input_data, created_at
+            FROM saved_inputs 
+            WHERE tool_type = ? 
+            AND DATE(created_at) = DATE('now')
+            ORDER BY created_at DESC
+        ''', (tool_type,))
+        
+        results = cursor.fetchall()
+        conn.close()
+        
+        # JSON 데이터를 파이썬 객체로 변환
+        import json
+        saved_inputs = []
+        for row in results:
+            try:
+                input_data = json.loads(row[1])
+                saved_inputs.append({
+                    'id': row[0],
+                    'data': input_data,
+                    'created_at': row[2]
+                })
+            except:
+                continue
+                
+        return saved_inputs
+    except Exception as e:
+        print(f"입력값 불러오기 오류: {str(e)}")
+        return []
+
+# 오래된 입력값 정리 함수
+def cleanup_old_inputs():
+    """24시간 이상 된 입력값 삭제"""
+    try:
+        conn = sqlite3.connect(app.config['DATABASE'])
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            DELETE FROM saved_inputs 
+            WHERE created_at < datetime('now', '-1 day')
+        ''')
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"오래된 입력값 정리 오류: {str(e)}")
+        return False
 
 # 허용된 파일 확장자 확인
 def allowed_file(filename, file_type):
@@ -297,6 +398,12 @@ def domeggook():
             
             # 변환 실행
             result = domeggook_converter.modify_order(html_content, order_data)
+            
+            # 입력값 저장 (변환 성공 시)
+            if result and not result.startswith("HTML 수정 중 오류가 발생했습니다"):
+                print(f"[도매꾹] 저장 시도: {order_data.get('product_title', 'Unknown')}")
+                save_result = save_input_data('domeggook', order_data)
+                print(f"[도매꾹] 저장 결과: {save_result}")
             
             # 파일 저장 기능 추가
             saved_filename = None
@@ -479,6 +586,16 @@ def convert_order():
         
         # 3단계: 필드 적용 (기존 ask_and_replace_fields의 on_ok 로직)
         result = naverpay_converter.apply_order_fields(final_html, trimmed_ul, option_inputs, 기타항목)
+        
+        # 입력값 저장 (변환 성공 시)
+        if result:
+            input_data = {
+                'html_content': html_content,
+                'option_count': option_count,
+                'option_inputs': option_inputs,
+                '기타항목': 기타항목
+            }
+            save_input_data('naverpay', input_data)
         
         # 4단계: 카드영수증용 데이터 저장 (기존 로직)
         try:
@@ -1009,6 +1126,65 @@ def view_log_file(filename):
         app.logger.error(f"로그 파일 조회 오류: {str(e)}")
         flash(f'로그 파일 조회 중 오류가 발생했습니다: {str(e)}', 'error')
         return redirect(url_for('monitor'))
+
+# 저장된 입력값 불러오기 API
+@app.route('/api/get-saved-inputs/<tool_type>')
+def get_saved_inputs_api(tool_type):
+    """저장된 입력값들을 JSON으로 반환"""
+    try:
+        saved_inputs = get_saved_inputs(tool_type)
+        
+        # JavaScript가 기대하는 구조로 변환
+        inputs = []
+        for item in saved_inputs:
+            inputs.append({
+                'id': item['id'],
+                'input_data': item['data'],  # 'data'를 'input_data'로 변경
+                'created_at': item['created_at']
+            })
+        
+        return jsonify({
+            'success': True,
+            'inputs': inputs
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+# 특정 입력값 불러오기 API
+@app.route('/api/load-input/<int:input_id>')
+def load_specific_input(input_id):
+    """특정 입력값을 불러오기"""
+    try:
+        conn = sqlite3.connect(app.config['DATABASE'])
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT input_data FROM saved_inputs WHERE id = ?
+        ''', (input_id,))
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            import json
+            return jsonify({
+                'success': True,
+                'input_data': json.loads(result[0])
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '입력값을 찾을 수 없습니다.'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 
 
 if __name__ == '__main__':

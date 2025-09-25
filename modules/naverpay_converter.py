@@ -24,10 +24,10 @@ class NaverpayConverter:
             self.sample_ul = ""
     
     def replace_ul(self, html, sample_ul):
-        """옵션 ul 부분을 샘플코드로 교체 (ul~Notice_section-notice__aTOa2 포함)"""
+        """옵션 ul 부분을 샘플코드로 교체 (ul~AssignmentButtonGroup_section-button__-QunD 포함, 그 뒤 첫 </ul>까지)"""
         pattern = (
             r'(<ul class="ProductInfoSection_product-list__LNSQt"[^>]*>'
-            r'[\s\S]*?Notice_section-notice__aTOa2[\s\S]*?</div>\s*</ul>)'
+            r'[\s\S]*?AssignmentButtonGroup_section-button__-QunD[\s\S]*?</ul>)'
         )
         return re.sub(pattern, sample_ul, html, count=1)
     
@@ -51,7 +51,7 @@ class NaverpayConverter:
             badge = li.find("span", class_="Badge_type-basic__HO5JF")
             if badge and '사은품' in badge.get_text():
                 li.decompose()
-        return str(soup)
+        return str(ul)
     
     def format_price(self, val):
         """금액 포맷 함수"""
