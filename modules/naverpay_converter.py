@@ -24,13 +24,17 @@ class NaverpayConverter:
             self.sample_ul = ""
     
     def replace_ul(self, html, sample_ul):
-        """옵션 ul 부분을 샘플코드로 교체 (ul~AssignmentButtonGroup_section-button__-QunD 포함, 그 뒤 첫 </ul>까지)"""
-        pattern = (
-            r'(<ul class="ProductInfoSection_product-list__LNSQt"[^>]*>'
-            r'[\s\S]*?AssignmentButtonGroup_section-button__-QunD[\s\S]*?</ul>)'
-        )
+        """ProductInfoSection_product-list__LNSQt ul 태그 전체를 샘플코드로 교체"""
+        soup = BeautifulSoup(html, 'html.parser')
+        target_ul = soup.find('ul', class_='ProductInfoSection_product-list__LNSQt')
         
-        return re.sub(pattern, sample_ul, html, count=1)
+        if target_ul:
+            # ul 태그 전체를 샘플코드로 교체
+            new_ul = BeautifulSoup(sample_ul, 'html.parser')
+            target_ul.replace_with(new_ul)
+            return str(soup)
+        
+        return html
     
     def replace_purchase_date_in_sample(self, sample_ul, purchase_date):
         """샘플코드 내의 '구매확정일 ...' 부분만 모두 입력값으로 교체"""
@@ -295,5 +299,4 @@ class NaverpayConverter:
         weekdays = ['월', '화', '수', '목', '금', '토', '일']
         weekday = weekdays[today.weekday()]
         return f"구매확정일 {today.strftime('%Y. %m. %d.')} ({weekday})"
-
 
