@@ -29,6 +29,7 @@ class NaverpayConverter:
             r'(<ul class="ProductInfoSection_product-list__LNSQt"[^>]*>'
             r'[\s\S]*?AssignmentButtonGroup_section-button__-QunD[\s\S]*?</ul>)'
         )
+        
         return re.sub(pattern, sample_ul, html, count=1)
     
     def replace_purchase_date_in_sample(self, sample_ul, purchase_date):
@@ -41,17 +42,21 @@ class NaverpayConverter:
         ul = soup.find("ul", class_="ProductInfoSection_product-list__LNSQt")
         if not ul:
             return sample_ul
+        
         # li 리스트 추출
         li_list = ul.find_all("li", class_="ProductInfoSection_product-item__dipCB")
+        
         # 옵션 개수만큼만 li 남기고 나머지 삭제
         for li in li_list[option_count:]:
             li.decompose()
+        
         # 각 li 내부에서 '사은품' li 삭제
         for li in ul.find_all("li", class_="ProductDetail_option__AC1PJ"):
             badge = li.find("span", class_="Badge_type-basic__HO5JF")
             if badge and '사은품' in badge.get_text():
                 li.decompose()
-        return str(ul)
+        
+        return str(soup)
     
     def format_price(self, val):
         """금액 포맷 함수"""
